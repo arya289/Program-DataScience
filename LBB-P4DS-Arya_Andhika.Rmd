@@ -1,0 +1,142 @@
+---
+title: "Grocery Sales 2018"
+author: "Arya Andhika"
+date: "7/14/2019"
+output: ioslides_presentation
+widescreen: true
+incremental: true
+smaller: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE) 
+library(knitr)
+library(kableExtra)
+```
+
+
+## Exploratory Data Analysis
+
+Data yang akan dianalisa dalam tugas LBB kali ini diambil dari kaggle, yakni Total Sales 2018 dari Grocery Shop.
+
+<div class="red2">
+> - Pertama - tama, lakukan input dan pengecekan struktur data:
+</div>
+```{r}
+sales <- read.csv("Data Source/SELL_1.csv", sep = ';') # separator pada data menggunakan ';'
+str(sales)
+View(sales)
+```
+
+## Data Adjustment
+
+Berdasarkan hasil pengecekan data, didapatkan bahwa banyak Field/Variabel yang tidak memiliki tipe yang sesuai ataupun kontennya kurang tepat, yakni:
+
+- Date, variabel ini memiliki konten seperti tanggal, tapi ternyata merupakan bulan di tahun 2018.
+- Pname, variabel ini perlu diubah menjadi Character karena sifatnya unik
+- Pquantity, yakni Product quantity, perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pce_zn, yakni Net price of purchase, perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pwa_zn, yakni Net value of purchase (quantity*net purchase price), perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pce_sn, yakni Net price of sale, perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pwa_sn, yakni Net value of sale (quantity*net price of sale), perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pce_sb, yakni Gross price of sale, perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pwa_sb, yakni Gross value of sale (quantity*gross sale price), perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pudzsb, yakni share in sales [%], perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pmarza, yakni percent of margin [%], perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pmarzajedn, yakni unit (product) margin, perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pkwmarza, yakni sell margin (margin*quantity of sold products) [%], perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+- pudzmarza, yakni share in margin [%], perlu diubah menjadi numeric dan mengganti ',' dengan '.'
+
+
+## Hasil Adjustment 
+```{r}
+sales2 <- sales #untuk backup
+sales2$Date <- format(as.Date(sales2$Date, '%d.%m.%Y'), '%b') # mengganti penulisan menjadi bulan
+sales2$Date <- as.factor(sales2$Date) # mengubah character menjadi integer
+colnames(sales2)[1] <- "Month" # mengubah nama kolom dari Date menjadi Month
+sales$Pname <- as.character(sales2$Pname)
+sales2$Pquantity <- as.integer(gsub(",", ".", sales2$Pquantity)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pce_zn <- as.numeric(gsub(",", ".", sales2$pce_zn)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pwa_zn <- as.numeric(gsub(",", ".", sales2$pwa_zn)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pce_sn <- as.numeric(gsub(",", ".", sales2$pce_sn)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pwa_sn <- as.numeric(gsub(",", ".", sales2$pwa_sn)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pce_sb <- as.numeric(gsub(",", ".", sales2$pce_sb)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pwa_sb <- as.numeric(gsub(",", ".", sales2$pwa_sb)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pudzsb <- as.numeric(gsub(",", ".", sales2$pudzsb)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pmarza <- as.numeric(gsub(",", ".", sales2$pmarza)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pmarzajedn <- as.numeric(gsub(",", ".", sales2$pmarzajedn)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pkwmarza <- as.numeric(gsub(",", ".", sales2$pkwmarza)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+sales2$pudzmarza <- as.numeric(gsub(",", ".", sales2$pudzmarza)) # mengganti ',' menjadi '.' dan diubah menjadi numeric
+str(sales2)
+```
+
+## Lihat Rangkuman Data
+
+Langkah selanjutnya adalah melihat summary dari data untuk dapat insight isi data Sales 2018:
+
+```{r}
+summary(sales2)
+```
+
+## Head Data
+```{r}
+kable(head(sales2)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 14) %>% scroll_box(width = "100%", height = "500px")
+```
+
+## Tail Data
+```{r}
+kable(tail(sales2)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 14) %>% scroll_box(width = "100%", height = "500px")
+```
+
+## Data Insight #1
+> - Jumlah Penjualan terbanyak terdapat di bulan Agustus (2,144)
+> - SWEETS merupakan group produk dengan jumlah penjualan terbanyak
+> - Dari jumlah produk terjual, terlihat adanya anomali dimana nilai 3rd Qu: 11 namun Max. nya 2,735, menandakan rentangnya jauh
+> - Dan ditemukan juga produk dengan Pquantity = 0 namun memiliki value:
+```{r}
+kable(sales2[sales2$Pquantity == 0, 5:16]) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 14) %>% scroll_box(width = "100%", height = "300px")
+```
+> - Untuk selanjutnya akan dihilangkan karena merupakan penyimpangan
+```{r}
+sales2 <- sales2[!(sales2$Pquantity==0), ]
+```
+
+## Data Insight #2
+> - Lihat nama produk dengan Net value of sale tertinggi dan bandingkan dengan Net value of purchase
+```{r}
+kable(sales2[sales2$pwa_sn == 500, c("Pname", "pwa_zn","pwa_sn", "pmarza")]) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 14) %>% scroll_box(width = "100%", height = "100px")
+```
+> - Ternyata produk dengan nilai penjualan tertinggi tidak menjamin mendapatkan margin besar
+> - Lihat nama produk dengan margin penjualan terbesar dan terkecil
+```{r}
+kable(sales2[sales2$pmarza == -121.78 | sales2$pmarza == 99.91, c("Pname", "Pgroup", "pwa_zn","pwa_sn", "pmarza")]) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 14) %>% scroll_box(width = "100%", height = "100px")
+```
+
+## Data Insight #3
+> - Lihat Kategori Produk dengan Net value of sale lebih besar dari rataan
+```{r}
+object1 <- sales2[sales2$pwa_sn > 46.15, ] # filter by net value of sale
+kable(aggregate(formula = pwa_sn ~ Pgroup, data = object1, FUN = length)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 14) %>% scroll_box(width = "100%", height = "150px")
+```
+> - Cigarette merupakan kategori produk yang terbanyak terjual dengan Net value of sale > rataan
+> - Lihat Penjualan pada masing - masing Bulan di 2018
+```{r}
+sales2$Month <- factor(sales2$Month, levels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")) #reordering Month
+kable(aggregate(formula = pwa_sn ~ Month, data = sales2, FUN = sum)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 14) %>% scroll_box(width = "100%", height = "150px")
+```
+> - Penjualan terbesar terdapat di Bulan Jul-Aug (kemungkinan karena Summer)
+
+## Data Insight #4
+> - Cari Produk dengan Rataan Sell Margin (Margin*Jumlah Produk Terjual) Terbesar
+```{r}
+kable(aggregate(formula = pkwmarza ~ Pgroup, data = sales2, FUN = mean)) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 14) %>% scroll_box(width = "100%", height = "400px")
+```
+
+> - EGG merupakan Kategori Produk dengan Rataan Sell Margin terbesar
+
+## Data Insight #5
+> - Cari Korelasi Antara Sell Margin dengan Tingkat Net Value Salesnya
+```{r}
+plot(aggregate(formula = pkwmarza ~ pwa_sn, data = sales2, FUN = mean), main = "Korelasi Rataan Sell Margin vs Net Value Sales")
+```
+> - Semakin tinggi Net Value Sales maka Sell Margin juga makin tinggi
